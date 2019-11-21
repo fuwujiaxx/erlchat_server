@@ -23,8 +23,7 @@ loop() ->
       erlang:start_timer(1 , Pid , ResMsg);
     {applyMsg , Pid , UserId} ->
       HistoryApplyJson =  maps:get(<<"responseBody">> , historyApply(UserId)),
-      ApplyInfoJson = jsx:decode(HistoryApplyJson , [return_maps]),
-      Res = #{msgType => <<"96">> , historyApplyArry => ApplyInfoJson},
+      Res = #{msgType => <<"96">> , historyApplyArray => HistoryApplyJson},
       ResMsg = jsx:encode(Res),
       erlang:start_timer(1 , Pid , ResMsg)
   end.

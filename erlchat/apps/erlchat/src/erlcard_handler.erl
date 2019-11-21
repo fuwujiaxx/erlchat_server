@@ -19,7 +19,7 @@ init(Req0 , Opts) ->
   %%获取用户id
   TUserId = proplists:get_value(<<"tuserid">> , Query),
 
-  %%获取用户信息q
+  %%获取用户信息
   UserInfo = proplists:get_value(<<"userinfo">> , Query),
 
   Pid = proplists:get_value(TUserId , ets:lookup(session , TUserId)),
