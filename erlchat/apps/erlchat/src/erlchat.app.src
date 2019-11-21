@@ -1,0 +1,15 @@
+{application, erlchat,
+ [{description, "An OTP application"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, {erlchat_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+	  cowboy
+   ]},
+  {env,[{http_port, 8099}]},
+  {modules, []},
+  {licenses, ["Apache 2.0"]},
+  {links, []}
+]}.
