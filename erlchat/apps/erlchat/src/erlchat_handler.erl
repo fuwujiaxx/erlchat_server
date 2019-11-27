@@ -71,7 +71,39 @@ websocket_handle({text, Msg}, State) ->
             false ->
               {[{text , FromSendMsg}], State}
           end;
-
+      %%发送名片
+      (MsgType =:= <<"10">>) ->
+          #{<<"msgCode">> := MsgCode , <<"responseBody">> := ResponseBody} = erlchat_user:sendCard(FromUserId , ToUserId , Message),
+          case MsgCode of
+            <<"0">> ->
+              ResMsg = jsx:encode(#{userInfo => ResponseBody , msgType => <<"11">>}),
+              %%向此用户发送消息
+              erlang:start_timer(1 , Pid , ResMsg);
+            _ ->
+              ok
+          end;
+      %%接受好友请求
+      (MsgType =:= <<"20">>) ->
+          #{<<"msgCode">> := MsgCode} = erlchat_user:accept/2(Message , FromUserId),
+          case MsgCode of
+            <<"0">> ->
+              ResMsg = jsx:encode(#{status => 0 , message => "对方已接受你的请求" , msgType => <<"23">>}),
+              %%向此用户发送消息
+              erlang:start_timer(1 , Pid , ResMsg);
+            _ ->
+              ok
+          end;
+      %%拒绝好友请求
+      (MsgType =:= <<"21">>) ->
+          #{<<"msgCode">> := MsgCode} = erlchat_user:sendCard(Message , FromUserId),
+          case MsgCode of
+            <<"0">> ->
+              ResMsg = jsx:encode(#{status => 1 , message => "对方已拒绝你的请求" , msgType => <<"23">>}),
+              %%向此用户发送消息
+              erlang:start_timer(1 , Pid , ResMsg);
+            _ ->
+              ok
+          end;
       %%聊天对话框打开
       (MsgType =:= <<"98">>) ->
           Val = "user-" ++ binary_to_list(ToUserId) ++ "|" ++ binary_to_list(FromUserId),

@@ -10,8 +10,7 @@
 %% Application callbacks
 -export([
   start/2,
-  stop/1,
-  server_url/0
+  stop/1
 ]).
  
 -define(C_ACCEPTORS,  100).
@@ -60,20 +59,11 @@ port() ->
 
 ssl_path() ->
     case os:getenv("SSL_PATH") of
-        flase ->
+        false ->
           {ok , SSL_PATH} = application:get_env(ssl_path),
           SSL_PATH;
-        _ ->
-            ""
-    end.
-
-server_url() ->
-    case os:getenv("SERVER_PATH") of
-        false ->
-          {ok , SERVER_PATH} = application:get_env(server_path),
-          SERVER_PATH;
-        _ ->
-          ""
+        Other ->
+          Other
     end.
 
 %% internal functions

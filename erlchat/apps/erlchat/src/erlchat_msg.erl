@@ -30,7 +30,7 @@ loop() ->
 
 
 historyApply(UserId) ->
-  Res = httpc:request(erlchat_app:server_url() ++ "/friend/historyApply?userid=" ++ UserId),
+  Res = httpc:request(erlchat_data:server_url() ++ "/friend/historyApply?userid=" ++ UserId),
   case Res of
     {ok , {_,_,ResBody}}->
       jsx:decode(list_to_binary(ResBody) , [return_maps]);

@@ -11,7 +11,7 @@
   {env,[
       {http_port, 443} ,
       {ssl_path , "/home/chat/ssl"},
-      {server_url , "https://www.kaidianapp.com/shop_api"}
+      {req_server_url , "https://www.kaidianapp.com/shop_api"}
   ]},
   {modules, []},
   {licenses, ["Apache 2.0"]},

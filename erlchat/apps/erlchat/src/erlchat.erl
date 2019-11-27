@@ -11,4 +11,5 @@ start() ->
   ok = application:start(ranch),
   ok = application:start(cowlib),
   ok = application:start(cowboy),
-  ok = application:start(erlchat).
+  ok = application:start(erlchat),
+  application:which_applications().

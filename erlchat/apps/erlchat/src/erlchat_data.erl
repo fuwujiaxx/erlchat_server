@@ -15,6 +15,7 @@
 -export([createTable/0]).
 -export([add_tb_uchat_message/5]).
 -export([query_tb_uchat_message/2]).
+-export([server_url/0]).
 -export([do/1 , doSort/1 , queryMsg/1 , updateMsgUnread/3 , unReadMsgNum/3 , totalUnread/1]).
 
 %%查询用户历史聊天消息
@@ -155,6 +156,10 @@ updateTable(Map) ->
         mnesia:write(Map)
       end,
   mnesia:transaction(F).
+
+
+server_url() ->
+  "https://www.kaidianapp.com/shop_api".
 
 %% 创建表
 createTable() ->
