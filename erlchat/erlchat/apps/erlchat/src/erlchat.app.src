@@ -5,15 +5,11 @@
   {mod, {erlchat_app, []}},
   {applications,
    [kernel,
-    stdlib,
-	  cowboy
+    stdlib
    ]},
-  {env,[
-      {http_port, 443} ,
-      {ssl_path , "/home/chat/ssl"},
-      {server_url , "https://www.kaidianapp.com/shop_api"}
-  ]},
+  {env,[]},
   {modules, []},
+
   {licenses, ["Apache 2.0"]},
   {links, []}
-]}.
+ ]}.

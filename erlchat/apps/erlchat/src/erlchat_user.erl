@@ -13,7 +13,7 @@
 -export([userInfo/1]).
 
 userInfo(UserId) ->
-  Res = httpc:request("http://localhost:8080/shop_api/mine/userInfo?userid=" ++ UserId),
+  Res = httpc:request(erlchat_app:server_url() ++ "/mine/userInfo?userid=" ++ UserId),
   case Res of
     {ok , {_,_,ResBody}}->
       jsx:decode(list_to_binary(ResBody) , [return_maps]);
