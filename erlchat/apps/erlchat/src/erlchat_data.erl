@@ -16,37 +16,67 @@
 -export([add_tb_uchat_message/5]).
 -export([query_tb_uchat_message/2]).
 -export([server_url/0]).
--export([do/1 , doSort/1 , queryMsg/1 , updateMsgUnread/3 , unReadMsgNum/3 , totalUnread/1]).
+-export([queryMsgSelect/4]).
+-export([add_tb_uchat_msg/3]).
+-export([do/1 , doSort/1 , queryMsg/2 , updateMsgUnread/3 , unReadMsgNum/3 , totalUnread/1]).
 
 %%查询用户历史聊天消息
-queryMsg(UserId) ->
-  Lists = doSort(qlc:q([X || X <- mnesia:table(tb_uchat_message) ,
-    (X#tb_uchat_message.from =:= UserId) or (X#tb_uchat_message.to =:= UserId)])),
-    Res = lists:map(fun(Item) ->
-        FromUserId = Item#tb_uchat_message.from,
-        ToUserId = Item#tb_uchat_message.to,
-        MsgId = Item#tb_uchat_message.msgId,
-        LastTime = erlchat_date:localTimeFormat(Item#tb_uchat_message.lastTime),
-        LastMessage = Item#tb_uchat_message.lastMessage,
-        UnRead = unReadMsgNum(UserId , FromUserId , ToUserId),
-        Data = [#{userid => Uid , message => Msg , msgType => MsgType , fromAvatar => FromAvatar} ||
-          {_ , _ , _ , Uid , Msg , MsgType , _ , FromAvatar , _}
-          <- do(qlc:q([X || X <- mnesia:table(tb_uchat_message_record),
-          X#tb_uchat_message_record.msgId =:= MsgId]))],
-        #{<<"portrait">> := FromAvatar , <<"name">> := FromName , <<"company">> := FromCompany , <<"position">> := FromPosition} =
-            maps:get(<<"responseBody">> , erlchat_user:userInfo(FromUserId)),
-        #{<<"portrait">> := ToAvatar , <<"name">> := ToName , <<"company">> := ToCompany , <<"position">> := ToPosition} =
-            maps:get(<<"responseBody">> , erlchat_user:userInfo(ToUserId)),
-        if
-          FromUserId =:= UserId ->
-            #{userid => ToUserId , name => ToName , unread => UnRead , avatar => ToAvatar, lastTime => LastTime , lastMessage => LastMessage ,
-              company => ToCompany , position => ToPosition , data => Data};
-          true ->
-            #{userid => FromUserId , name => FromName , unread => UnRead , avatar => FromAvatar, lastTime => LastTime , lastMessage => LastMessage ,
-              company => FromCompany , position => FromPosition , data => Data}
-        end
-    end , Lists),
-    Res.
+queryMsg(UserId , Top) ->
+  try
+    Lists = doSort(qlc:q([X || X <- mnesia:table(tb_uchat_message) ,
+      (X#tb_uchat_message.from =:= UserId) or (X#tb_uchat_message.to =:= UserId)])),
+      Res = lists:map(fun(Item) ->
+          FromUserId = Item#tb_uchat_message.from,
+          ToUserId = Item#tb_uchat_message.to,
+          MsgId = Item#tb_uchat_message.msgId,
+          LastTime = Item#tb_uchat_message.lastTime,
+          LastMessage = Item#tb_uchat_message.lastMessage,
+          UnRead = unReadMsgNum(UserId , FromUserId , ToUserId),
+          Data = [#{userid => Uid , message => Msg , msgType => MsgType , fromAvatar => FromAvatar} ||
+            {_ , _ , _ , Uid , Msg , MsgType , _ , FromAvatar , _}
+            <- select_limitTop(qlc:q([X || X <- mnesia:table(tb_uchat_message_record),
+            X#tb_uchat_message_record.msgId =:= MsgId]) , Top)],
+          #{<<"portrait">> := FromAvatar , <<"name">> := FromName , <<"company">> := FromCompany , <<"position">> := FromPosition} =
+              maps:get(<<"responseBody">> , erlchat_user:userInfo(FromUserId)),
+          #{<<"portrait">> := ToAvatar , <<"name">> := ToName , <<"company">> := ToCompany , <<"position">> := ToPosition} =
+              maps:get(<<"responseBody">> , erlchat_user:userInfo(ToUserId)),
+          if
+            FromUserId =:= UserId ->
+              #{userid => ToUserId , name => ToName , unread => UnRead , avatar => ToAvatar, lastTime => LastTime , lastMessage => LastMessage ,
+                company => ToCompany , position => ToPosition , msgType => <<"23">> , data => Data};
+            true ->
+              #{userid => FromUserId , name => FromName , unread => UnRead , avatar => FromAvatar, lastTime => LastTime , lastMessage => LastMessage ,
+                company => FromCompany , position => FromPosition , msgType => <<"23">> , data => Data}
+          end
+      end , Lists),
+      Res
+  catch
+    _:_ -> []
+  end.
+
+queryMsgSelect(ToId , FromId , Start , Size) ->
+  try
+    Lists = doSort(qlc:q([X || X <- mnesia:table(tb_uchat_message) ,
+      ((X#tb_uchat_message.from =:= FromId) and (X#tb_uchat_message.to =:= ToId) or (X#tb_uchat_message.from =:= ToId) and (X#tb_uchat_message.to =:= FromId))])),
+    [Res|_] = lists:map(fun(Item) ->
+          FromUserId = Item#tb_uchat_message.from,
+          ToUserId = Item#tb_uchat_message.to,
+          MsgId = Item#tb_uchat_message.msgId,
+          Data = [#{userid => Uid , message => Msg , msgType => MsgType , fromAvatar => FromAvatar} ||
+            {_ , _ , _ , Uid , Msg , MsgType , _ , FromAvatar , _}
+              <- select_limit(qlc:q([X || X <- mnesia:table(tb_uchat_message_record),
+              X#tb_uchat_message_record.msgId =:= MsgId]) , Start , Size)],
+          if
+            FromUserId =:= FromId ->
+              #{userid => ToUserId , data => Data};
+            true ->
+              #{userid => FromUserId , data => Data}
+          end
+      end , Lists),
+    Res
+  catch
+    _:_ -> #{userid => ToId , data => []}
+  end.
 
 do(Q) ->
   F = fun() -> qlc:e(Q) end,
@@ -59,6 +89,35 @@ doSort(Q) ->
       end,
   {atomic , Val} = mnesia:transaction(F),
   Val.
+
+%% 查询分页Top
+select_limitTop(Q , Top) ->
+  try
+    F = fun() ->
+      QS = qlc:e(qlc:keysort(2 , Q , [{order , descending}])),
+      QC = qlc:cursor(QS),
+      qlc:next_answers(QC , Top)
+        end,
+    {atomic , Val} = mnesia:transaction(F),
+    lists:reverse(Val)
+  catch
+    _:_ -> []
+  end.
+
+%% 查询分页
+select_limit(Q , Start , Size) ->
+  try
+    F = fun() ->
+      QS = qlc:e(qlc:keysort(2 , Q , [{order , descending}])),
+      QC = qlc:cursor(QS),
+      qlc:next_answers(QC , Start),
+      qlc:next_answers(QC , Size)
+        end,
+    {atomic , Val} = mnesia:transaction(F),
+    lists:reverse(Val)
+  catch
+    _:_ -> []
+  end.
 
 %%插入消息
 add_tb_uchat_message(From , To , Message , MsgType , Time) ->
@@ -89,13 +148,31 @@ add_tb_uchat_message(From , To , Message , MsgType , Time) ->
       mnesia:transaction(F),
       add_tb_uchat_message_record(From , Message , MsgType , Uuid , Time)
   end,
-  Val = "user-" ++ binary_to_list(From) ++ "|" ++ binary_to_list(To),
-  case ets:member(session , Val) of
+  Chats = ets:lookup(session , <<"winchats">>),
+  case lists:member(To , Chats) of
     true ->
       ok;
     false ->
       updateMsgUnread(From , To , 9999)
-end.
+  end.
+
+%% 首次插入消息
+add_tb_uchat_msg(From , To , Time) ->
+  Lists = do(qlc:q([X || X <- mnesia:table(tb_uchat_message) ,
+    ((X#tb_uchat_message.from =:= From) and (X#tb_uchat_message.to =:= To)) or
+      ((X#tb_uchat_message.to =:= From) and (X#tb_uchat_message.from =:= To))])),
+
+  if length(Lists) =:= 0 ->
+      Uuid = uuid:uuid_to_string(uuid:get_v4()),
+      Id = mnesia:dirty_update_counter(erlang_sequence, tb_uchat_message, 1),
+      Row = #tb_uchat_message{id = Id , from = From , to = To , msgId = Uuid , lastTime = Time},
+      F = fun() ->
+        mnesia:write(Row)
+          end,
+      mnesia:transaction(F);
+    true ->
+      ok
+  end.
 
 add_tb_uchat_message_record(UserId , Message , MsgType , MsgId , Time) ->
   #{<<"portrait">> := Portrait} = maps:get(<<"responseBody">> , erlchat_user:userInfo(UserId)),

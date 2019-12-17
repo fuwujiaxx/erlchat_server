@@ -20,17 +20,19 @@
  
 start(_StartType, _StartArgs) ->
     %%初始化保存用户连接信息
-    ets:new(session , [public , named_table]),
+    ets:new(session , [public , set , named_table]),
+    ets:insert(session , {<<"winchats">> , []}),
     Routes    = routes(),
     Dispatch  = cowboy_router:compile(Routes),
     Port      = port(),
     SSL_PATH = ssl_path(),
-    TransOpts = [{port, Port} ,
-      {cacertfile , SSL_PATH ++ "/cowboy-ca.crt"},
-      {certfile , SSL_PATH ++ "/server.crt"},
-      {keyfile , SSL_PATH ++ "/server.key"}],
+    TransOpts = [{port, Port},
+        {cacertfile , SSL_PATH ++ "/cowboy-ca.crt"},
+        {certfile , SSL_PATH ++ "/server.crt"},
+        {keyfile , SSL_PATH ++ "/server.key"}
+     ],
     ProtoOpts = #{env => #{dispatch => Dispatch}},
-    {ok, _}   = cowboy:start_tls(https, TransOpts, ProtoOpts),
+    {ok, _}   = cowboy:start_tls(https , TransOpts , ProtoOpts),
     erlchat_sup:start_link().
  
 stop(_State) ->
@@ -42,9 +44,7 @@ stop(_State) ->
 routes() ->
     [
        {'_', [
-              {"/chat" , erlchat_handler , []},
-              {"/card" , erlcard_handler , []},
-              {"/test" , erltest_handler , []}
+              {"/chat" , erlchat_handler , []}
        ]}
     ].
  

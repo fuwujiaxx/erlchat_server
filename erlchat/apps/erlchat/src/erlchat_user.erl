@@ -17,7 +17,7 @@
 -export([encode/1]).
 
 userInfo(UserId) ->
-  Res = httpc:request(erlchat_data:server_url() ++ "/mine/userInfo?userid=" ++ UserId),
+  Res = httpc:request(erlchat_data:server_url() ++ "/mine/userInfo?userid=" ++ binary_to_list(UserId)),
   case Res of
     {ok , {_,_,ResBody}}->
       jsx:decode(list_to_binary(ResBody) , [return_maps]);
@@ -26,7 +26,7 @@ userInfo(UserId) ->
   end.
 
 sendCard(FromUserId , ToUserId , Remark) ->
-  Url = erlchat_data:server_url() ++ "/friend/sendCard?suserid=" ++ FromUserId ++ "&tuserid=" ++ ToUserId ++ "&remark=" ++ Remark,
+  Url = erlchat_data:server_url() ++ "/friend/sendCard?suserid=" ++ binary_to_list(FromUserId) ++ "&tuserid=" ++ binary_to_list(ToUserId) ++ "&remark=" ++ binary_to_list(Remark),
   Res = httpc:request(Url),
   case Res of
     {ok , {_,_,ResBody}}->
@@ -37,7 +37,7 @@ sendCard(FromUserId , ToUserId , Remark) ->
 
 %% 接受请求
 accept(Id , UserId) ->
-  Url = erlchat_data:server_url() ++ "/friend/accept?id=" ++ Id ++ "&userid=" ++ UserId,
+  Url = erlchat_data:server_url() ++ "/friend/accept?id=" ++ binary_to_list(Id) ++ "&userid=" ++ binary_to_list(UserId),
   Res = httpc:request(Url),
   case Res of
     {ok , {_,_,ResBody}}->
@@ -48,7 +48,7 @@ accept(Id , UserId) ->
 
 %% 拒绝请求
 reject(Id , UserId) ->
-  Url = erlchat_data:server_url() ++ "/friend/reject?id=" ++ Id ++ "&userid=" ++ UserId,
+  Url = erlchat_data:server_url() ++ "/friend/reject?id=" ++ binary_to_list(Id) ++ "&userid=" ++ binary_to_list(UserId),
   Res = httpc:request(Url),
   case Res of
     {ok , {_,_,ResBody}}->
