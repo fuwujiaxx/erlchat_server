@@ -15,14 +15,17 @@
   from,
   msgId,
   lastMessage,
-  lastTime
+  lastTime,
+  lastMsgType
 }).
+
 -record(tb_uchat_message_read , {
   id,
   from,
   to,
   num
 }).
+
 -record(tb_uchat_message_record , {
   id,
   msgId,
@@ -32,4 +35,24 @@
   addTime,
   fromAvatar,
   isDel
+}).
+
+%%关联用户信息,消息,好友信息
+-record(tb_uchat_join_message , {
+  id,
+  fromUserId,
+  toUserId,
+  lastTime,
+  lastMessage,
+  lastMsgType,
+  toAvatar,
+  toName,
+  toCompany,
+  toPosition,
+  fromAvatar,
+  fromName,
+  fromCompany,
+  fromPosition,
+  unread,
+  tid
 }).

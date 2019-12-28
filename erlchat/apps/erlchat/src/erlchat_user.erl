@@ -12,10 +12,12 @@
 %% API
 -export([userInfo/1]).
 -export([sendCard/3]).
+-export([isFriend/2]).
 -export([accept/2]).
 -export([reject/2]).
 -export([encode/1]).
 
+%%缓存查询用信息
 userInfo(UserId) ->
   Res = httpc:request(erlchat_data:server_url() ++ "/mine/userInfo?userid=" ++ binary_to_list(UserId)),
   case Res of
@@ -25,6 +27,17 @@ userInfo(UserId) ->
       Cause
   end.
 
+%%查询用户是否互为好友
+isFriend(FromUserId , ToUserId) ->
+  Res = httpc:request(erlchat_data:server_url() ++ "/friend/isExists?userid=" ++ binary_to_list(FromUserId) ++ "&friendid=" ++ binary_to_list(ToUserId)),
+  case Res of
+    {ok , {_,_,ResBody}}->
+      jsx:decode(list_to_binary(ResBody) , [return_maps]);
+    {error , Cause} ->
+      Cause
+  end.
+
+%%发送好友请求
 sendCard(FromUserId , ToUserId , Remark) ->
   Url = erlchat_data:server_url() ++ "/friend/sendCard?suserid=" ++ binary_to_list(FromUserId) ++ "&tuserid=" ++ binary_to_list(ToUserId) ++ "&remark=" ++ binary_to_list(Remark),
   Res = httpc:request(Url),

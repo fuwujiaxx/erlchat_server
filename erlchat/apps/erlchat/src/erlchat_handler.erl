@@ -21,7 +21,7 @@ init(Req=#{pid := Pid} , Opts) ->
 
 websocket_init(State) ->
   UserId = proplists:get_value(self() , ets:lookup(session , self())),
-  MsgData = jsx:encode(#{msgType => <<"100">> , record => erlchat_data:queryMsg(UserId , 6)}),
+  MsgData = jsx:encode(#{msgType => <<"100">> , record => erlchat_data:queryMsg(UserId)}),
   erlang:start_timer(1 , self() , MsgData),
   TotalUnread = erlchat_data:totalUnread(UserId),
   Res = #{msgType => <<"97">> , userid => UserId , unread => -99 , totalUnread => TotalUnread},
@@ -131,10 +131,10 @@ sendMessage(ToUserId , FromUserId , Message , MsgType , State) ->
   ToUserInfo = maps:get(<<"responseBody">> , erlchat_user:userInfo(ToUserId)),
   Time = erlchat_date:localNowSeconds(),
   #{<<"portrait">> := FromAvatar} = FromUserInfo,
-  ToSendMessageMap = #{userid => FromUserId , touserid => ToUserId,  message => Message ,
+  ToSendMessageMap = #{userid => FromUserId , touserid => ToUserId,  message => Message , addTime => Time,
     msgType => MsgType , fromAvatar => FromAvatar , fromUserInfo => FromUserInfo , toUserInfo => ToUserInfo , lastTime => Time},
-  FromSendMessageMap = #{userid => FromUserId , touserid => ToUserId, message => Message , msgType => MsgType ,
-    fromAvatar => FromAvatar, fromUserInfo => FromUserInfo , toUserInfo => ToUserInfo , lastTime => Time},
+  FromSendMessageMap = #{userid => FromUserId , touserid => ToUserId, message => Message , addTime => Time,
+    msgType => MsgType , fromAvatar => FromAvatar, fromUserInfo => FromUserInfo , toUserInfo => ToUserInfo , lastTime => Time},
   ToSendMsg = jsx:encode(ToSendMessageMap),
   FromSendMsg = jsx:encode(FromSendMessageMap),
 
@@ -189,7 +189,8 @@ accept(ToUserId , FromUserId , Id , State) ->
       erlang:start_timer(1 , Pid , jsx:encode(ToResRead)),
 
       erlang:start_timer(1 , FromPid , FromResMsg),
-      erlang:start_timer(1 , FromPid , jsx:encode(FromResRead));
+      erlang:start_timer(1 , FromPid , jsx:encode(FromResRead)),
+      erlchat_data:acceptFriendApply(FromUserId , ToUserId);
     _ ->
       ok
   end,
